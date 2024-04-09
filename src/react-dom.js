@@ -35,10 +35,48 @@ function setPropsForDOM(dom, VNodeProps = {}) {
   }
 }
 
+// 处理函数组件
+function getDomByFunctionComponent(VNode) {
+  let { type, props } = VNode;
+  // type为函数名
+  let renderVNode = type(props);
+
+  if (!renderVNode) return null;
+
+  return createDom(renderVNode);
+}
+
+// 处理类组件
+function getDomByClassComponent(VNode) {
+  let { type, props } = VNode;
+  let instance = new type(props);
+
+  let renderVNode = instance.render();
+
+  if (!renderVNode) return null;
+
+  return createDom(renderVNode);
+}
+
 function createDom(VNode) {
   // 1.创建元素  2.处理子元素  3.处理属性值
   const { type, props } = VNode;
   let dom;
+
+  if (
+    typeof type === "function" &&
+    VNode.$$typeof === REACT_ELEMENT &&
+    type.IS_CLASS_COMPONENT
+  ) {
+    // 判断是否为类组件
+    return getDomByClassComponent(VNode);
+  }
+
+  if (typeof type === "function" && VNode.$$typeof === REACT_ELEMENT) {
+    // 判断是否为函数组件
+    return getDomByFunctionComponent(VNode);
+  }
+
   if (type && VNode.$$typeof === REACT_ELEMENT) {
     dom = document.createElement(type);
   }

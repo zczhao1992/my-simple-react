@@ -10,3 +10,8 @@
 
 - 1.1 实现函数 React.createElement
 - 1.2 实现函数 ReactDOM.render
+
+### 第二章 类组件与函数组件
+
+- 2.1 实现函数组件渲染 getDomByFunctionComponent
+- 2.2 实现类组件渲染 getDomByClassComponent
