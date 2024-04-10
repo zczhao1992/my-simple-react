@@ -1,4 +1,5 @@
 import { REACT_ELEMENT } from "./utils.js";
+import { addEvent } from "./event.js";
 
 function mount(VNode, containerDOM) {
   let newDOM = createDom(VNode);
@@ -25,6 +26,7 @@ function setPropsForDOM(dom, VNodeProps = {}) {
 
     if (/^on[A-Z].*/.test(key)) {
       // TODO: 事件处理
+      addEvent(dom, key.toLowerCase(), VNodeProps[key]);
     } else if (key === "style") {
       Object.keys(VNodeProps[key]).forEach((styleName) => {
         dom.style[styleName] = VNodeProps[key][styleName];
@@ -52,6 +54,15 @@ function getDomByClassComponent(VNode) {
   let instance = new type(props);
 
   let renderVNode = instance.render();
+
+  instance.oldVNode = renderVNode;
+
+  // // TODO: 测试setState
+  // setTimeout(() => {
+  //   // debugger;
+  //   instance.setState({ xxx: "999999999" });
+  // }, 2000);
+  // // TODO: 测试setState
 
   if (!renderVNode) return null;
 
@@ -93,6 +104,9 @@ function createDom(VNode) {
 
   //TODO: 处理属性值
   setPropsForDOM(dom, props);
+
+  VNode.dom = dom;
+
   return dom;
 }
 
@@ -100,6 +114,18 @@ function render(VNode, containerDOM) {
   // 将虚拟DOM转化为真实DOM
   // 将得到的真实DOM挂载到containerDOM中
   mount(VNode, containerDOM);
+}
+
+export function findDomByVNode(VNode) {
+  if (!VNode) return;
+
+  if (VNode.dom) return VNode.dom;
+}
+
+export function updateDomTree(oldDOM, newVNode) {
+  let parentNode = oldDOM.parentNode;
+  parentNode.removeChild(oldDOM);
+  parentNode.appendChild(createDom(newVNode));
 }
 
 const ReactDOM = {

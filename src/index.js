@@ -18,8 +18,25 @@ import ReactDOM from "./react-dom";
 
 // 测试类组件
 class MyClassComponent extends React.Component {
+  constructor(props) {
+    super(props);
+
+    this.state = { xxx: "999", count: "0" };
+  }
+
+  updateCount() {
+    console.log("ddddddd");
+    this.setState({
+      count: "1",
+    });
+  }
+
   render() {
-    return <div style={{ color: "red" }}>{this.props.xx}</div>;
+    return (
+      <div style={{ color: "red" }} onClick={() => this.updateCount()}>
+        1111-{this.state.count}
+      </div>
+    );
   }
 }
 

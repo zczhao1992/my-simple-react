@@ -15,3 +15,5 @@
 
 - 2.1 实现函数组件渲染 getDomByFunctionComponent
 - 2.2 实现类组件渲染 getDomByClassComponent
+- 2.3 实现更新并渲染 setState-updater 类
+- 2.4 事件合成机制
