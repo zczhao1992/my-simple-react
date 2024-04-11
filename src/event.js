@@ -14,6 +14,7 @@ function dispatchEvent(nativeEvent) {
   // 事件合成机制的核心点二：屏蔽浏览器之间的差异(默认行为、阻止冒泡)
   let syntheticEvent = createSyntheticEvent(nativeEvent);
   let target = nativeEvent.target;
+  // console.log(target, target.attach);
   while (target) {
     syntheticEvent.currentTarget = target;
     let eventName = `on${nativeEvent.type}`;

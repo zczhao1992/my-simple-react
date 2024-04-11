@@ -6,14 +6,15 @@
 
 ### 目录
 
-### 第一章 初始化渲染
+### 1 初始化渲染
 
 - 1.1 实现函数 React.createElement
 - 1.2 实现函数 ReactDOM.render
 
-### 第二章 类组件与函数组件
+### 2 类组件与函数组件
 
 - 2.1 实现函数组件渲染 getDomByFunctionComponent
 - 2.2 实现类组件渲染 getDomByClassComponent
-- 2.3 实现更新并渲染 setState-updater 类
-- 2.4 事件合成机制
+- 2.3 实现更新并渲染 setState & updater 类
+- 2.4 事件合成机制 syntheticEvent
+- 2.5 ref & forwardRef

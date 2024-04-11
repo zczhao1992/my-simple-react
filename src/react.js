@@ -1,4 +1,4 @@
-import { REACT_ELEMENT } from "./utils.js";
+import { REACT_ELEMENT, REACT_FORWARD_REF } from "./utils.js";
 import { Component } from "./Component.js";
 
 function createElement(type, properties, children) {
@@ -26,9 +26,24 @@ function createElement(type, properties, children) {
   };
 }
 
+function createRef() {
+  return {
+    current: null,
+  };
+}
+
+function forwardRef(render) {
+  return {
+    $$typeof: REACT_FORWARD_REF,
+    render,
+  };
+}
+
 const React = {
   createElement,
   Component,
+  createRef,
+  forwardRef,
 };
 
 export default React;

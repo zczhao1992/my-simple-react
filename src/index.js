@@ -42,6 +42,13 @@ class MyClassComponent extends React.Component {
 
 // console.log(<div style={{ color: "red" }}>1111111</div>);
 
+// 测试ref
+let res = React.forwardRef((props, ref) => {
+  return <div ref={ref}>23123123213</div>;
+});
+
+console.log(res);
+
 ReactDOM.render(
   <MyClassComponent xx="child1" />,
   document.getElementById("root")

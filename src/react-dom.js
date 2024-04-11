@@ -1,4 +1,4 @@
-import { REACT_ELEMENT } from "./utils.js";
+import { REACT_ELEMENT, REACT_FORWARD_REF } from "./utils.js";
 import { addEvent } from "./event.js";
 
 function mount(VNode, containerDOM) {
@@ -50,13 +50,14 @@ function getDomByFunctionComponent(VNode) {
 
 // 处理类组件
 function getDomByClassComponent(VNode) {
-  let { type, props } = VNode;
+  let { type, props, ref } = VNode;
   let instance = new type(props);
 
   let renderVNode = instance.render();
 
   instance.oldVNode = renderVNode;
 
+  ref && (ref.current = instance);
   // // TODO: 测试setState
   // setTimeout(() => {
   //   // debugger;
@@ -69,10 +70,25 @@ function getDomByClassComponent(VNode) {
   return createDom(renderVNode);
 }
 
+// 处理函数组件的ref
+function getDomByForwardRefFunction(VNode) {
+  let { type, props, ref } = VNode;
+
+  let renderVNode = type.render(props, ref);
+
+  if (!renderVNode) return null;
+
+  return createDom(renderVNode);
+}
+
 function createDom(VNode) {
   // 1.创建元素  2.处理子元素  3.处理属性值
-  const { type, props } = VNode;
+  const { type, props, ref } = VNode;
   let dom;
+
+  if (type && type.$$typeof === REACT_FORWARD_REF) {
+    return getDomByForwardRefFunction(VNode);
+  }
 
   if (
     typeof type === "function" &&
@@ -107,6 +123,7 @@ function createDom(VNode) {
 
   VNode.dom = dom;
 
+  ref && (ref.current = dom);
   return dom;
 }
 
