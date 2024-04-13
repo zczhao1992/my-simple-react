@@ -1,4 +1,4 @@
-import { REACT_ELEMENT, REACT_FORWARD_REF } from "./utils.js";
+import { REACT_ELEMENT, REACT_FORWARD_REF, toVNode } from "./utils.js";
 import { Component } from "./Component.js";
 
 function createElement(type, properties, children) {
@@ -12,9 +12,9 @@ function createElement(type, properties, children) {
   let props = { ...properties };
 
   if (arguments.length > 3) {
-    props.children = Array.prototype.slice.call(arguments, 2);
+    props.children = Array.prototype.slice.call(arguments, 2).map(toVNode);
   } else {
-    props.children = children;
+    props.children = toVNode(children);
   }
 
   return {

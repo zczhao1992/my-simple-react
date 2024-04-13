@@ -47,7 +47,7 @@ let res = React.forwardRef((props, ref) => {
   return <div ref={ref}>23123123213</div>;
 });
 
-console.log(res);
+console.log(<MyClassComponent />);
 
 ReactDOM.render(
   <MyClassComponent xx="child1" />,

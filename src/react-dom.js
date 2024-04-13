@@ -1,4 +1,9 @@
-import { REACT_ELEMENT, REACT_FORWARD_REF } from "./utils.js";
+import {
+  REACT_ELEMENT,
+  REACT_FORWARD_REF,
+  REACT_TEXT,
+  toVNode,
+} from "./utils.js";
 import { addEvent } from "./event.js";
 
 function mount(VNode, containerDOM) {
@@ -10,11 +15,12 @@ function mountArray(children, parent) {
   if (!Array.isArray(children)) return;
 
   for (let i = 0; i < children.length; i++) {
-    if (typeof children[i] === "string") {
-      parent.appendChild(document.createTextNode(children[i]));
-    } else {
-      mount(children[i], parent);
-    }
+    // if (typeof children[i] === "string") {
+    //   parent.appendChild(document.createTextNode(children[i]));
+    // } else {
+    children[i].index = i;
+    mount(children[i], parent);
+    // }
   }
 }
 
@@ -104,7 +110,9 @@ function createDom(VNode) {
     return getDomByFunctionComponent(VNode);
   }
 
-  if (type && VNode.$$typeof === REACT_ELEMENT) {
+  if (type === REACT_TEXT) {
+    dom = document.createTextNode(props.text);
+  } else if (type && VNode.$$typeof === REACT_ELEMENT) {
     dom = document.createElement(type);
   }
 
@@ -113,9 +121,10 @@ function createDom(VNode) {
       mount(props.children, dom);
     } else if (Array.isArray(props.children)) {
       mountArray(props.children, dom);
-    } else if (typeof props.children === "string") {
-      dom.appendChild(document.createTextNode(props.children));
     }
+    // else if (typeof props.children === "string") {
+    //   dom.appendChild(document.createTextNode(props.children));
+    // }
   }
 
   //TODO: 处理属性值
@@ -139,11 +148,104 @@ export function findDomByVNode(VNode) {
   if (VNode.dom) return VNode.dom;
 }
 
-export function updateDomTree(oldDOM, newVNode) {
+export function updateDomTree(oldVNode, newVNode, oldDOM) {
   let parentNode = oldDOM.parentNode;
-  parentNode.removeChild(oldDOM);
-  parentNode.appendChild(createDom(newVNode));
+  // parentNode.removeChild(oldDOM);
+  // parentNode.appendChild(createDom(newVNode));
+
+  // 新节点，旧节点都不存在
+  // 新节点存在，旧节点不存在
+  // 新节点不存在，纠节点存在
+  // 新节点存在，纠节点也存在，但是类型不一样
+  // 新节点存在，纠节点也存在，类型ye一样 --> 值得进行深入比较，探索复用相关节点的方案
+
+  const typeMap = {
+    NO_OPERATE: !oldVNode && !newVNode,
+    ADD: !oldVNode && newVNode,
+    DELETE: oldVNode && !newVNode,
+    REPLACE: oldVNode && newVNode && oldVNode.type !== newVNode.type,
+  };
+
+  let UPDATE_TYPE = Object.keys(typeMap).filter((key) => typeMap[key])[0];
+
+  switch (UPDATE_TYPE) {
+    case "NO_OPERATE":
+      break;
+    case "DELETE":
+      removeVNode(oldVNode);
+      break;
+    case "ADD":
+      oldDOM.parentNode.appendChild(createDom(newVNode));
+      break;
+    case "REPLACE":
+      removeVNode(oldVNode);
+      oldDOM.parentNode.appendChild(createDom(newVNode));
+      break;
+    default:
+      // 深度的dom diff，新老虚拟DOM都存在且类型相同
+      deepDOMDiff(oldVNode, newVNode);
+      break;
+  }
 }
+
+function removeVNode(VNode) {
+  const currentDOM = findDomByVNode(VNode);
+
+  if (currentDOM) currentDOM.remove();
+}
+
+function deepDOMDiff(oldVNode, newVNode) {
+  let diffTypeMap = {
+    ORGIN_NODE: typeof oldVNode.type === "string",
+    CLASS_COMPONENT:
+      typeof oldVNode.type === "function" && oldVNode.type.IS_CLASS_COMPONENT,
+    FUNCTION_COMPONENT: typeof oldVNode.type === "function",
+    TEXT: oldVNode.type === REACT_TEXT,
+  };
+  let DIFF_TYPE = Object.keys(diffTypeMap).filter((key) => diffTypeMap[key])[0];
+
+  switch (DIFF_TYPE) {
+    case "ORGIN_NODE":
+      let currentDOM = (newVNode.dom = findDomByVNode(oldVNode));
+      setPropsForDOM(currentDOM, newVNode.props);
+      updateChildren(
+        currentDOM,
+        oldVNode.props.children,
+        newVNode.props.children
+      );
+      break;
+    case "CLASS_COMPONENT":
+      updateClassComponent(oldVNode, newVNode);
+      break;
+    case "FUNCTION_COMPONENT":
+      updateFunctionComponent(oldVNode, newVNode);
+      break;
+    case "TEXT":
+      newVNode.dom = findDomByVNode(oldVNode);
+      newVNode.dom.textContent = newVNode.props.text;
+      break;
+    default:
+      break;
+  }
+}
+
+function updateFunctionComponent(oldVNode, newVNode) {
+  let oldDOM = findDomByVNode(oldVNode);
+  if (!oldDOM) return;
+  const { type, props } = newVNode;
+
+  let newRenderVNode = type(props);
+  updateDomTree(oldVNode.oldRenderVNode, newRenderVNode, oldDOM);
+  newVNode.oldRenderVNode = newRenderVNode;
+}
+
+function updateClassComponent(oldVNode, newVNode) {
+  const classInstance = (newVNode.classInstance = oldVNode.classInstance);
+  classInstance.updater.launchUpdate();
+}
+
+// DOM DIFF算法的核心
+function updateChildren(parentDOM, oldVNodeChildren, newVNodeChildren) {}
 
 const ReactDOM = {
   render,

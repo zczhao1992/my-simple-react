@@ -18,3 +18,7 @@
 - 2.3 实现更新并渲染 setState & updater 类
 - 2.4 事件合成机制 syntheticEvent
 - 2.5 ref & forwardRef
+
+### 3 DOM DIFF
+
+- 3.1 实现 DOM DIFF 算法 updateDomTree
