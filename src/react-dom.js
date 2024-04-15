@@ -2,7 +2,8 @@ import {
   REACT_ELEMENT,
   REACT_FORWARD_REF,
   REACT_TEXT,
-  toVNode,
+  CREATE,
+  MOVE,
 } from "./utils.js";
 import { addEvent } from "./event.js";
 
@@ -18,6 +19,7 @@ function mountArray(children, parent) {
     // if (typeof children[i] === "string") {
     //   parent.appendChild(document.createTextNode(children[i]));
     // } else {
+    // 记录父节点下是第几个子元素，diff用
     children[i].index = i;
     mount(children[i], parent);
     // }
@@ -149,7 +151,7 @@ export function findDomByVNode(VNode) {
 }
 
 export function updateDomTree(oldVNode, newVNode, oldDOM) {
-  let parentNode = oldDOM.parentNode;
+  // let parentNode = oldDOM.parentNode;
   // parentNode.removeChild(oldDOM);
   // parentNode.appendChild(createDom(newVNode));
 
@@ -245,7 +247,83 @@ function updateClassComponent(oldVNode, newVNode) {
 }
 
 // DOM DIFF算法的核心
-function updateChildren(parentDOM, oldVNodeChildren, newVNodeChildren) {}
+function updateChildren(parentDOM, oldVNodeChildren, newVNodeChildren) {
+  oldVNodeChildren = (
+    Array.isArray(oldVNodeChildren) ? oldVNodeChildren : [oldVNodeChildren]
+  ).filter(Boolean);
+  newVNodeChildren = (
+    Array.isArray(newVNodeChildren) ? newVNodeChildren : [newVNodeChildren]
+  ).filter(Boolean);
+
+  let lastNotChangedIndex = -1;
+  let oldKeyChildMap = {};
+  oldVNodeChildren.forEach((oldVNode, index) => {
+    let oldKey = oldVNode && oldVNode.key ? oldVNode.key : index;
+
+    oldKeyChildMap[oldKey] = oldVNode;
+  });
+
+  // 遍历新的子虚拟DOM数组，找到可以复用但需要移动的节点，
+  // 需要重新创建的节点，需要删除的节点，剩下的就是可以复用且不用移动的节点
+  let actions = [];
+  newVNodeChildren.forEach((newVNode, index) => {
+    newVNode.index = index;
+    let newKey = newVNode.key ? newVNode.key : index;
+    let oldVNode = oldKeyChildMap[newKey];
+
+    if (oldVNode) {
+      deepDOMDiff(oldVNode, newVNode);
+      if (oldVNode.index < lastNotChangedIndex) {
+        actions.push({
+          type: MOVE,
+          oldVNode,
+          newVNode,
+          index,
+        });
+      }
+      delete oldKeyChildMap[newKey];
+      lastNotChangedIndex = Math.max(lastNotChangedIndex, oldVNode.index);
+    } else {
+      actions.push({
+        type: CREATE,
+        newVNode,
+        index,
+      });
+    }
+  });
+
+  let VNodeToMove = actions
+    .filter((action) => action.type === MOVE)
+    .map((action) => action.oldVNode);
+
+  let VNodeToDelete = Object.values(oldKeyChildMap);
+
+  VNodeToMove.concat(VNodeToDelete).forEach((oldVNode) => {
+    let currentDOM = findDomByVNode(oldVNode);
+    currentDOM.remove();
+  });
+
+  actions.forEach((action) => {
+    let { type, oldVNode, newVNode, index } = action;
+
+    let childNodes = parentDOM.childNodes;
+    let childNode = childNodes[index];
+    const getDomForInsert = () => {
+      if (type === CREATE) {
+        return createDom(newVNode);
+      }
+
+      if (type === MOVE) {
+        return findDomByVNode(oldVNode);
+      }
+    };
+    if (childNode) {
+      parentDOM.insertBefore(getDomForInsert(), childNode);
+    } else {
+      parentDOM.appendChild(getDomForInsert());
+    }
+  });
+}
 
 const ReactDOM = {
   render,
