@@ -21,4 +21,11 @@
 
 ### 3 DOM DIFF
 
-- 3.1 实现 DOM DIFF 算法 updateDomTree
+- 3.1 实现 DOM DIFF 算法
+
+### 4 类组件生命周期
+
+- 4.1 实现 componentDidMount、componentDidUpdate、componentWillUnmount
+- 4.2 实现 shouldComponentUpdate
+- 4.3 实现 getDefirvedStateFromProps
+- 4.4 实现 getSnapshotBeforeUpdate

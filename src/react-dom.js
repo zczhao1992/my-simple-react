@@ -65,6 +65,8 @@ function getDomByClassComponent(VNode) {
 
   instance.oldVNode = renderVNode;
 
+  VNode.classInstance = instance;
+
   ref && (ref.current = instance);
   // // TODO: 测试setState
   // setTimeout(() => {
@@ -75,7 +77,13 @@ function getDomByClassComponent(VNode) {
 
   if (!renderVNode) return null;
 
-  return createDom(renderVNode);
+  let dom = createDom(renderVNode);
+
+  if (instance.componentDidMount) {
+    instance.componentDidMount();
+  }
+
+  return dom;
 }
 
 // 处理函数组件的ref
@@ -194,6 +202,10 @@ function removeVNode(VNode) {
   const currentDOM = findDomByVNode(VNode);
 
   if (currentDOM) currentDOM.remove();
+
+  if (VNode.classInstance && VNode.classInstance.componentWillUnmount) {
+    VNode.classInstance.componentWillUnmount();
+  }
 }
 
 function deepDOMDiff(oldVNode, newVNode) {
@@ -243,7 +255,7 @@ function updateFunctionComponent(oldVNode, newVNode) {
 
 function updateClassComponent(oldVNode, newVNode) {
   const classInstance = (newVNode.classInstance = oldVNode.classInstance);
-  classInstance.updater.launchUpdate();
+  classInstance.updater.launchUpdate(newVNode.props);
 }
 
 // DOM DIFF算法的核心

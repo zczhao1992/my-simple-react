@@ -24,6 +24,10 @@ class MyClassComponent extends React.Component {
     this.state = { xxx: "999", count: "0" };
   }
 
+  getSnapshotBeforeUpdate(...a) {
+    console.log(a);
+  }
+
   updateCount() {
     console.log("ddddddd");
     this.setState({

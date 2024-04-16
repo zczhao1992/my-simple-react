@@ -16,3 +16,46 @@ export const toVNode = (node) => {
       }
     : node;
 };
+
+export const deeoClone = (data) => {
+  let type = getType(data);
+  let resultValue;
+  if (type !== "array" && type !== "object") return data;
+
+  if (type === "array") {
+    resultValue = [];
+
+    data.forEach((item) => {
+      resultValue.push(deeoClone(item));
+    });
+    return resultValue;
+  }
+
+  if (type === "object") {
+    resultValue = {};
+
+    for (const key in data) {
+      if (data.hasOwnProperty(key)) {
+        resultValue[key] = deeoClone(data[key]);
+      }
+    }
+
+    return resultValue;
+  }
+};
+
+export function getType(obj) {
+  let typeMap = {
+    "[Object Boolean]": "boolean",
+    "[Object Number]": "number",
+    "[object String]": "string",
+    "[Object Function]": "function",
+    "[object Array]": "array",
+    "[object Date]": "date",
+    "[object RegExp]": "regExp",
+    "[object Undefined]": "undefined",
+    "[object Null]": "null",
+    "[object Object]": "object",
+  };
+  return typeMap[Object.prototype.toString.call(obj)];
+}

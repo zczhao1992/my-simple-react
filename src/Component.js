@@ -1,4 +1,5 @@
 import { findDomByVNode, updateDomTree } from "./react-dom.js";
+import { deeoClone } from "./utils.js";
 
 export let updaterQueue = {
   isBatch: false,
@@ -32,22 +33,34 @@ class Updater {
     }
   }
 
-  launchUpdate() {
+  launchUpdate(nextProps) {
     const { ClassComponentInstance, pendingStates } = this;
+    if (pendingStates.length === 0 && !nextProps) return;
+    // if (pendingStates.length === 0) return;
+    let isShouldUpdate = true;
 
-    if (pendingStates.length === 0) return;
+    let prevProps = deeoClone(this.ClassComponentInstance.props);
+    let prevState = deeoClone(this.ClassComponentInstance.state);
+
     // 合并
-    ClassComponentInstance.state = this.pendingStates.reduce(
-      (preState, newState) => {
-        return { ...preState, ...newState };
-      },
-      ClassComponentInstance.state
-    );
+    let nextState = this.pendingStates.reduce((preState, newState) => {
+      return { ...preState, ...newState };
+    }, ClassComponentInstance.state);
+
     // 清空
     this.pendingStates.length = 0;
+    if (
+      ClassComponentInstance.shouldComponentUpdate &&
+      !ClassComponentInstance.shouldComponentUpdate(nextProps, nextState)
+    ) {
+      isShouldUpdate = false;
+    }
+
+    ClassComponentInstance.state = nextState;
+    if (nextProps) ClassComponentInstance.props = nextProps;
 
     // 更新
-    ClassComponentInstance.update();
+    if (isShouldUpdate) ClassComponentInstance.update(prevProps, prevState);
   }
 }
 
@@ -70,7 +83,7 @@ export class Component {
     this.updater.addState(partialState);
   }
 
-  update() {
+  update(prevProps, prevState) {
     // 1.获取重新执行render函数后的虚拟DOM 新虚拟DOM
     // 2.根据新虚拟DOM生成真实DOM
     // 3.将真实DOM挂载到页面上
@@ -79,10 +92,26 @@ export class Component {
 
     let oldDOM = findDomByVNode(oldVNode); // TODO: 将真实DOM保存到对应的虚拟DOM上
 
+    if (this.constructor.getDerivedStateFromProps) {
+      let newState = this.constructor.getDerivedStateFromProps(
+        this.props,
+        this.state
+      );
+      this.state = { ...this.state, ...newState };
+    }
+
+    let snapshot =
+      this.getSnapshotBeforeUpdate &&
+      this.getSnapshotBeforeUpdate(prevProps, prevState);
+
     let newVNode = this.render();
 
     updateDomTree(oldVNode, newVNode, oldDOM);
 
     this.oldVNode = newVNode;
+
+    if (this.componentDidUpdate) {
+      this.componentDidUpdate(this.props, this.state, snapshot);
+    }
   }
 }
