@@ -29,3 +29,8 @@
 - 4.2 实现 shouldComponentUpdate
 - 4.3 实现 getDefirvedStateFromProps
 - 4.4 实现 getSnapshotBeforeUpdate
+
+### 5 函数组件性能优化
+
+- 5.1 实现 PureComponent
+- 5.2 实现 memo

@@ -15,6 +15,16 @@ import ReactDOM from "./react-dom";
 // function MyFuncitonComponent(props) {
 //   return <div style={{ color: "red" }}>1111111</div>;
 // }
+class GettComponent extends React.PureComponent {
+  constructor(props) {
+    super(props);
+    console.log("GettComponent");
+  }
+
+  render() {
+    return <div>213213123</div>;
+  }
+}
 
 // 测试类组件
 class MyClassComponent extends React.Component {
@@ -39,6 +49,7 @@ class MyClassComponent extends React.Component {
     return (
       <div style={{ color: "red" }} onClick={() => this.updateCount()}>
         1111-{this.state.count}
+        <GettComponent count={this.state.count} />
       </div>
     );
   }
@@ -52,6 +63,12 @@ let res = React.forwardRef((props, ref) => {
 });
 
 console.log(<MyClassComponent />);
+
+const Greeting = React.memo(function Greeting({ name }) {
+  console.log("Greeting...");
+
+  return <h3>hello {name}</h3>;
+});
 
 ReactDOM.render(
   <MyClassComponent xx="child1" />,

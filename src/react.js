@@ -1,4 +1,10 @@
-import { REACT_ELEMENT, REACT_FORWARD_REF, toVNode } from "./utils.js";
+import {
+  REACT_ELEMENT,
+  REACT_FORWARD_REF,
+  toVNode,
+  shallowCompare,
+  REACT_MEMO,
+} from "./utils.js";
 import { Component } from "./Component.js";
 
 function createElement(type, properties, children) {
@@ -39,11 +45,30 @@ function forwardRef(render) {
   };
 }
 
+class PureComponent extends Component {
+  shouldComponentUpdate(nextProps, nextState) {
+    return (
+      !shallowCompare(this.props, nextProps) ||
+      !shallowCompare(this.state, nextState)
+    );
+  }
+}
+
+function memo(type, compare) {
+  return {
+    $$typeof: REACT_MEMO,
+    type,
+    compare,
+  };
+}
+
 const React = {
   createElement,
   Component,
   createRef,
   forwardRef,
+  PureComponent,
+  memo,
 };
 
 export default React;

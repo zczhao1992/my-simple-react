@@ -4,6 +4,8 @@ import {
   REACT_TEXT,
   CREATE,
   MOVE,
+  REACT_MEMO,
+  shallowCompare,
 } from "./utils.js";
 import { addEvent } from "./event.js";
 
@@ -52,8 +54,9 @@ function getDomByFunctionComponent(VNode) {
   let renderVNode = type(props);
 
   if (!renderVNode) return null;
-
-  return createDom(renderVNode);
+  let dom = createDom(renderVNode);
+  VNode.dom = dom;
+  return dom;
 }
 
 // 处理类组件
@@ -97,10 +100,22 @@ function getDomByForwardRefFunction(VNode) {
   return createDom(renderVNode);
 }
 
+function getDomByMemoFunctionComponent(VNode) {
+  let { type, props } = VNode;
+  let renderVNode = type.type(props);
+  if (!renderVNode) return null;
+  VNode.oldRenderVNode = renderVNode;
+  return createDom(renderVNode);
+}
+
 function createDom(VNode) {
   // 1.创建元素  2.处理子元素  3.处理属性值
   const { type, props, ref } = VNode;
   let dom;
+
+  if (type && type.$$typeof === REACT_MEMO) {
+    return getDomByMemoFunctionComponent(VNode);
+  }
 
   if (type && type.$$typeof === REACT_FORWARD_REF) {
     return getDomByForwardRefFunction(VNode);
@@ -215,6 +230,7 @@ function deepDOMDiff(oldVNode, newVNode) {
       typeof oldVNode.type === "function" && oldVNode.type.IS_CLASS_COMPONENT,
     FUNCTION_COMPONENT: typeof oldVNode.type === "function",
     TEXT: oldVNode.type === REACT_TEXT,
+    MEMO: oldVNode.type.$$typeof === REACT_MEMO,
   };
   let DIFF_TYPE = Object.keys(diffTypeMap).filter((key) => diffTypeMap[key])[0];
 
@@ -238,13 +254,16 @@ function deepDOMDiff(oldVNode, newVNode) {
       newVNode.dom = findDomByVNode(oldVNode);
       newVNode.dom.textContent = newVNode.props.text;
       break;
+    case "MEMO":
+      updateMemoFunctionComponent(oldVNode, newVNode);
+      break;
     default:
       break;
   }
 }
 
 function updateFunctionComponent(oldVNode, newVNode) {
-  let oldDOM = findDomByVNode(oldVNode);
+  let oldDOM = (newVNode.dom = findDomByVNode(oldVNode));
   if (!oldDOM) return;
   const { type, props } = newVNode;
 
@@ -256,6 +275,24 @@ function updateFunctionComponent(oldVNode, newVNode) {
 function updateClassComponent(oldVNode, newVNode) {
   const classInstance = (newVNode.classInstance = oldVNode.classInstance);
   classInstance.updater.launchUpdate(newVNode.props);
+}
+
+function updateMemoFunctionComponent(oldVNode, newVNode) {
+  let { type } = oldVNode;
+
+  if (
+    (!type.compare && !shallowCompare(oldVNode.props, newVNode.nextProps)) ||
+    !type.compare(oldVNode.props, newVNode.props)
+  ) {
+    const oldDOM = findDomByVNode(oldVNode);
+    const { type } = newVNode;
+
+    let renderVNode = type.type(newVNode.props);
+    updateDomTree(oldVNode.oldRenderVNode, renderVNode, oldDOM);
+    newVNode.oldRenderVNode = renderVNode;
+  } else {
+    newVNode.oldRenderVNode = oldVNode.oldRenderVNode;
+  }
 }
 
 // DOM DIFF算法的核心
